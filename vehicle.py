@@ -4,14 +4,14 @@ import numpy
 from helper_functions import *
 
 class Vehicle:
-    def __init__(self, x, y, yaw):
+    def __init__(self, x, y, yaw, meters_to_pixels):
         #position and orientation of the vehicle
         self.x = x
         self.y = y
         self.yaw = yaw
 
         #convert meters to pixels
-        self.meters_to_pixels = 2000 #how many pixels are in one meter?
+        self.meters_to_pixels = meters_to_pixels #how many pixels are in one meter?
 
         #vehicle dimensions in pixels
         self.length_px = 0.18 * self.meters_to_pixels

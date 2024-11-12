@@ -12,23 +12,41 @@ class Camera:
             print("Cannot open camera")
             exit()
 
+        #camera properties
+        self.opening_angle_vertical_degrees = 88.0
+        self.opening_angle_horizontal_degrees = 126.0
+        self.vertical_resolution_px = 1080
+        self.horizontal_resolution_px = 1920
+
         #configuration variables
-        self.meters_to_pixels = 2000        #how many pixels are in one meter?
+        self.meters_to_pixels = 1287        #how many pixels are in one meter?
         self.frames_per_seconds = 30        #framerate of the camera
         self.max_speed_vehicle_mps = 4.0    #max speed of a car in meters per second
         self.minimum_brightness = 2.7       #used to brighten the image of the webcam
         self.threshold_brightness_of_black = 150
         self.threshold_brightness_of_white = 200
-        self.size_between_black_and_white_center_px = 0.08 * self.meters_to_pixels
+        self.size_between_black_and_white_center_px = 0.08 * self.meters_to_pixels #8cm from center to center
         self.height_over_ground_black_meters = 0.042
         self.height_over_ground_white_meters = 0.025
-        self.circle_diameter_px = 0.02 * self.meters_to_pixels
+        self.circle_diameter_px = 0.02 * self.meters_to_pixels  #diameter of black and white dots (2cm)
 
-        #camera properties
-        self.opening_angle_vertical_degrees = 43.3
-        self.opening_angle_horizontal_degrees = 70.42
-        self.vertical_resolution_px = 1080
-        self.horizontal_resolution_px = 1920
+
+
+        #intrinsic camera calibration
+        #Camera matrix : 
+        self.cameraMatrix = np.array([[1.19164513e+03, 0.00000000e+00, 9.32255365e+02],
+                             [0.00000000e+00, 1.19269246e+03, 5.44789222e+02],
+                            [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
+
+        #Distortion coefficients : 
+        self.distortionCoefficients = np.array([[ 0.02473071, -0.39668063,  0.00151336,  0.00085757,  0.25759047]])
+
+        #apply camera correction
+        h,  w = self.horizontal_resolution_px, self.vertical_resolution_px
+        newcameramtx, roi =cv.getOptimalNewCameraMatrix(self.cameraMatrix,self.distortionCoefficients,(w,h),1,(w,h))
+        #self.remapX,self.remapY = cv.initUndistortRectifyMap(self.cameraMatrix,self.distortionCoefficients, None, newcameramtx,(2064, 1544),5)
+        self.remapX, self.remapY = cv.initUndistortRectifyMap(self.cameraMatrix,self.distortionCoefficients, None, newcameramtx,(h, w),5)
+
         
 
 
@@ -95,7 +113,7 @@ class Camera:
             found_vehicle.updatePose(xPos, yPos, yaw, self.current_time)
         else:
             if detect_new_vehicles:
-                vehicle = Vehicle(xPos, yPos, yaw)
+                vehicle = Vehicle(xPos, yPos, yaw, self.meters_to_pixels)
                 print(f"Found new Vehicle at {vehicle.getPosition()}, yaw angle {math.degrees(vehicle.getOrientation())}")
                 self.tracked_vehicles.append(vehicle)
 
@@ -154,6 +172,9 @@ class Camera:
             self.current_time = time.time()
 
             print(f"new frame at {self.current_time}-----------------------")
+
+            #apply camera correction to frame
+            frame = cv.remap(frame, self.remapX, self.remapY, cv.INTER_LINEAR)
         
             # if frame is read correctly ret is True
             if not ret:
@@ -174,7 +195,8 @@ class Camera:
 
 
             # detect circles in the image
-            circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT_ALT, 1.5, minDist=30, param1=300, param2=0.8, minRadius=int((self.circle_diameter_px/2.0)*0.9), maxRadius=int((self.circle_diameter_px/2.0)*1.1))
+            #circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT_ALT, 1.5, minDist=30, param1=300, param2=0.8, minRadius=int((self.circle_diameter_px/2.0)*0.9), maxRadius=int((self.circle_diameter_px/2.0)*1.1))
+            circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT_ALT, 1.5, minDist=30, param1=300, param2=0.8, minRadius=int((self.circle_diameter_px/2.0)*0.7), maxRadius=int((self.circle_diameter_px/2.0)*1.3))
             # ensure at least some circles were found
             if circles is not None:
                 # convert the (x, y) coordinates and radius of the circles to integers
@@ -190,6 +212,8 @@ class Camera:
                             print(f"Distance between black and white circle: {distance(black, white)}")
                             #black and white match: we found a vehicle.
                             self.updateVehiclePosition(black[0], black[1], getyaw(black, white))
+                        else:
+                            print(f"Distance too far between black and white circle: {distance(black, white)}")
 
             # Display the resulting frame
             cv.imshow('frame', frame)
@@ -233,6 +257,9 @@ class Camera:
 
             print("new frame -----------------------")
             time_start = time.time()
+
+            #apply camera correction to frame
+            frame = cv.remap(frame, self.remapX, self.remapY, cv.INTER_LINEAR)
             
         
             # if frame is read correctly ret is True
@@ -261,7 +288,7 @@ class Camera:
                 subimage_gray = cv.cvtColor(subimage_color, cv.COLOR_BGR2GRAY)
 
                 # detect circles in the subimage
-                circles = cv.HoughCircles(subimage_gray, cv.HOUGH_GRADIENT_ALT, 1.5, minDist=30, param1=300, param2=0.8, minRadius=int((self.circle_diameter_px/2.0)*0.8), maxRadius=int((self.circle_diameter_px/2.0)*1.2))
+                circles = cv.HoughCircles(subimage_gray, cv.HOUGH_GRADIENT_ALT, 1.5, minDist=30, param1=300, param2=0.8, minRadius=int((self.circle_diameter_px/2.0)*0.7), maxRadius=int((self.circle_diameter_px/2.0)*1.3))
                 
                 # ensure at least some circles were found
                 if circles is not None:
@@ -328,4 +355,4 @@ if __name__ == "__main__":
         if cam.detectVehicles() > 0:
             cam.trackVehicles()
         else:
-            print("Did not detect any vehicle.")
+            print("Lost track - restarting.")
