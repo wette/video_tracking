@@ -7,10 +7,17 @@ from vehicle import Vehicle
 
 class Camera:
     def __init__(self):
-        self.cap = cv.VideoCapture(0)
-        if not self.cap.isOpened():
+        cap = cv.VideoCapture(0, cv.CAP_V4L) #use V4L to access the camera
+        
+        if not cap.isOpened():
             print("Cannot open camera")
             exit()
+        
+        #configure video stream
+        cap.set(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc('M', 'J', 'P', 'G')) # depends on fourcc available camera
+        cap.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
+        cap.set(cv.CAP_PROP_FPS, 90)
 
         #camera properties
         self.opening_angle_vertical_degrees = 88.0
@@ -20,7 +27,7 @@ class Camera:
 
         #configuration variables
         self.meters_to_pixels = 1287        #how many pixels are in one meter?
-        self.frames_per_seconds = 30        #framerate of the camera
+        self.frames_per_seconds = 90        #framerate of the camera
         self.max_speed_vehicle_mps = 4.0    #max speed of a car in meters per second
         self.minimum_brightness = 2.7       #used to brighten the image of the webcam
         self.threshold_brightness_of_black = 150
@@ -29,6 +36,9 @@ class Camera:
         self.height_over_ground_black_meters = 0.042
         self.height_over_ground_white_meters = 0.025
         self.circle_diameter_px = 0.02 * self.meters_to_pixels  #diameter of black and white dots (2cm)
+
+
+        self.cap.set(cv.CAP_PROP_FPS, self.frames_per_seconds)
 
 
 
