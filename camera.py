@@ -262,6 +262,10 @@ class Camera:
             cv.line(frame, [int(x) for x in from_pt], [int(x) for x in to_pt], (255, 0, 0))
 
     def trackVehicles(self):
+
+        time_end = 0
+        fps_buffer = []
+
         while len(self.tracked_vehicles) > 0:
             # Capture frame-by-frame
             ret, frame = self.cap.read()
@@ -336,6 +340,7 @@ class Camera:
                 if updatedVehicle:
                     print(f"updated vehicle at {vehicle.getPosition()}, yaw: {vehicle.getOrientation()}")"""
 
+            time_for_one_pass = time.time() - time_end
             time_end = time.time()
             #debug info
 
@@ -348,6 +353,13 @@ class Camera:
                 cv.putText(frame, f"Speed: {vehicle.getSpeed():.2f} m/s", (int(boundingbox[0][0]), int(boundingbox[0][1])), cv.FONT_HERSHEY_SIMPLEX, 1,
                            (0,0,0), 2, cv.LINE_AA)
 
+            #print FPS
+            fps = 1.0/time_for_one_pass
+            fps_buffer.append(fps)
+            fps_buffer = fps_buffer[-self.frames_per_seconds:len(fps_buffer)] #keep last second
+
+            cv.putText(frame, f"FPS: {sum(fps_buffer)/len(fps_buffer)}", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1,
+                           (255,0,0), 2, cv.LINE_AA)
 
             #print(f"Procesing time: {(time_end-time_start)*1000}ms")
             # Display the resulting frame
