@@ -7,17 +7,17 @@ from vehicle import Vehicle
 
 class Camera:
     def __init__(self):
-        cap = cv.VideoCapture(0, cv.CAP_V4L) #use V4L to access the camera
+        self.cap = cv.VideoCapture(0, cv.CAP_V4L) #use V4L to access the camera
         
-        if not cap.isOpened():
+        if not self.cap.isOpened():
             print("Cannot open camera")
             exit()
         
         #configure video stream
-        cap.set(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc('M', 'J', 'P', 'G')) # depends on fourcc available camera
-        cap.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
-        cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
-        cap.set(cv.CAP_PROP_FPS, 90)
+        self.cap.set(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc('M', 'J', 'P', 'G')) # depends on fourcc available camera
+        self.cap.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+        self.cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
+        self.cap.set(cv.CAP_PROP_FPS, 90)
 
         #camera properties
         self.opening_angle_vertical_degrees = 88.0
