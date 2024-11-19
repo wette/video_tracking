@@ -12,6 +12,8 @@ class Camera:
         if not self.cap.isOpened():
             print("Cannot open camera")
             exit()
+
+        self.DEBUG = False
         
         #configure video stream
         self.cap.set(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc('M', 'J', 'P', 'G')) # depends on fourcc available camera
@@ -117,14 +119,14 @@ class Camera:
                 found_vehicle = v
                 break
             else:
-                print(f"Distance too large: {distance( (xPos, yPos), list(v.getPosition()) )} < {threshold}")
+                if self.DEBUG: print(f"Distance too large: {distance( (xPos, yPos), list(v.getPosition()) )} < {threshold}")
         
         if found_vehicle is not None:
             found_vehicle.updatePose(xPos, yPos, yaw, self.current_time)
         else:
             if detect_new_vehicles:
                 vehicle = Vehicle(xPos, yPos, yaw, self.meters_to_pixels)
-                print(f"Found new Vehicle at {vehicle.getPosition()}, yaw angle {math.degrees(vehicle.getOrientation())}")
+                if self.DEBUG: print(f"Found new Vehicle at {vehicle.getPosition()}, yaw angle {math.degrees(vehicle.getOrientation())}")
                 self.tracked_vehicles.append(vehicle)
 
 
@@ -181,7 +183,7 @@ class Camera:
             ret, frame = self.cap.read()
             self.current_time = time.time()
 
-            print(f"new frame at {self.current_time}-----------------------")
+            if self.DEBUG: print(f"new frame at {self.current_time}-----------------------")
 
             #apply camera correction to frame
             frame = cv.remap(frame, self.remapX, self.remapY, cv.INTER_LINEAR)
@@ -219,11 +221,11 @@ class Camera:
                 for black in black_dots:
                     for white in white_dots:
                         if self.size_between_black_and_white_center_px * (1-threshold) < distance(black, white) < self.size_between_black_and_white_center_px * (1+threshold):
-                            print(f"Distance between black and white circle: {distance(black, white)}")
+                            if self.DEBUG: print(f"Distance between black and white circle: {distance(black, white)}")
                             #black and white match: we found a vehicle.
                             self.updateVehiclePosition(black[0], black[1], getyaw(black, white))
                         else:
-                            print(f"Distance too far between black and white circle: {distance(black, white)}")
+                            if self.DEBUG: print(f"Distance too far between black and white circle: {distance(black, white)}")
 
             # Display the resulting frame
             cv.imshow('frame', frame)
@@ -265,7 +267,7 @@ class Camera:
             ret, frame = self.cap.read()
             self.current_time = time.time()
 
-            print("new frame -----------------------")
+            if self.DEBUG: print("new frame -----------------------")
             time_start = time.time()
 
             #apply camera correction to frame
@@ -304,11 +306,11 @@ class Camera:
                 if circles is not None:
                     # convert the (x, y) coordinates and radius of the circles to integers
                     circles = np.round(circles[0, :]).astype("int")
-                    print(f"Detected {len(circles)} circles.")
+                    if self.DEBUG: print(f"Detected {len(circles)} circles.")
                     
 
                     black_dots, white_dots, subimage_color = self.classifyDotsFromCircles(circles, subimage_color)
-                    print(f"Detected {len(black_dots)} black, and {len(white_dots)} white circles.")
+                    if self.DEBUG: print(f"Detected {len(black_dots)} black, and {len(white_dots)} white circles.")
 
                     #find a black circle which is close to a white one:
                     threshold = 0.3
@@ -326,7 +328,7 @@ class Camera:
                                 self.updateVehiclePosition(black[0], black[1], getyaw(black, white), detect_new_vehicles=False)
                                 updatedVehicle = True
                             else:
-                                print(f"too far apart: {distance(black, white)} px does not meet threshold {self.size_between_black_and_white_center_px}")
+                                if self.DEBUG: print(f"too far apart: {distance(black, white)} px does not meet threshold {self.size_between_black_and_white_center_px}")
                 
                 """if not updatedVehicle:
                     print(f"did not find vehicle at {vehicle.getPosition()}, yaw: {vehicle.getOrientation()}")
